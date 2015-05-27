@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.core import urlresolvers
 
+# This probably shouldn't be here, but it needs to occur before the user gets to do any interaction
+# with the database but after model creation, so this is where it landed.  We don't use the import for anything
+# it is merely here to ensure the code in registry.py gets run.  Needs to happen before import of models.fields
+# or it overrides the registry attribute
+import registry
+
 from core.dynamic.models import *
 from core.dynamic.models.fields import *
 
@@ -16,10 +22,14 @@ class DynamicFieldInline(admin.TabularInline):
             Returns a link to the subfield admin edit page
         '''
 
-        if not inst.id:
+        if not inst.pk:
             return None
 
-        return '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(FIELD_MAP[inst.type]), args=(inst.specific.pk, )))
+        print inst, inst.type, inst.specific.pk
+        print '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(registry.field_map[inst.type]), args=(inst.specific.pk, )))
+
+
+        return '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(registry.field_map[inst.type]), args=(inst.specific.pk, )))
 
     edit_link.verbose_name = 'Advanced settings'
     edit_link.allow_tags = True
@@ -52,6 +62,24 @@ class FieldAdmin(admin.ModelAdmin):
         '''
         return inst.field.name
 
+# this is kind of a hack to hide the field admins from the main admin site but still allow users to edit
+# field specific options
+fieldadmin = admin.AdminSite('fieldadmin')
+fieldadmin.register(CharField, FieldAdmin)
+fieldadmin.register(TextField, FieldAdmin)
+fieldadmin.register(SlugField, FieldAdmin)
+fieldadmin.register(EmailField, FieldAdmin)
+fieldadmin.register(BooleanField, FieldAdmin)
+fieldadmin.register(IntegerField, FieldAdmin)
+fieldadmin.register(BigIntegerField, FieldAdmin)
+fieldadmin.register(FloatField, FieldAdmin)
+fieldadmin.register(DecimalField, FieldAdmin)
+fieldadmin.register(DateField, FieldAdmin)
+fieldadmin.register(TimeField, FieldAdmin)
+fieldadmin.register(DateTimeField, FieldAdmin)
+fieldadmin.register(FileField, FieldAdmin)
+fieldadmin.register(ImageField, FieldAdmin)
+
 
 class DynamicModelAdmin(admin.ModelAdmin):
 
@@ -72,25 +100,6 @@ class DynamicModelAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super(DynamicModelAdmin, self).get_queryset(request)
         return qs.filter(modelwrapper__isnull=True)
-
-
-# this is kind of a hack to hide the field admins from the main admin site but still allow users to edit
-# field specific options
-fieldadmin = admin.AdminSite('fieldadmin')
-fieldadmin.register(CharField, FieldAdmin)
-fieldadmin.register(TextField, FieldAdmin)
-fieldadmin.register(SlugField, FieldAdmin)
-fieldadmin.register(EmailField, FieldAdmin)
-fieldadmin.register(BooleanField, FieldAdmin)
-fieldadmin.register(IntegerField, FieldAdmin)
-fieldadmin.register(BigIntegerField, FieldAdmin)
-fieldadmin.register(FloatField, FieldAdmin)
-fieldadmin.register(DecimalField, FieldAdmin)
-fieldadmin.register(DateField, FieldAdmin)
-fieldadmin.register(TimeField, FieldAdmin)
-fieldadmin.register(DateTimeField, FieldAdmin)
-fieldadmin.register(FileField, FieldAdmin)
-fieldadmin.register(ImageField, FieldAdmin)
 
 admin.site.register(Model, DynamicModelAdmin)
 
@@ -138,3 +147,4 @@ class ModelWrapperAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ModelWrapper, ModelWrapperAdmin)
+

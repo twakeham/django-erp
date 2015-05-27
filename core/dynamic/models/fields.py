@@ -1,6 +1,6 @@
 from django.db import models as db
 
-
+# built-in field type constants
 BIG_INT = 2
 BOOLEAN = 4
 CHAR = 5
@@ -18,121 +18,92 @@ SLUG = 16
 TEXT = 18
 TIME = 19
 URL = 20
-USER = 21
 
+# relation constants
 FOREIGN_KEY = 30
 MANY_TO_MANY = 31
 ONE_TO_ONE = 32
 
+# relations choices for type select box
 RELATION_CHOICES = (
     (FOREIGN_KEY, 'Foreign Key'),
     (MANY_TO_MANY, 'Many to Many'),
     (ONE_TO_ONE, 'One to One')
 )
 
-FIELD_CHOICES = (
-    (CHAR, 'Short Text'),
-    (TEXT, 'Text'),
-    (SLUG, 'Slug'),
-    (EMAIL, 'Email'),
-    (URL, 'URL'),
-    (BOOLEAN, 'Boolean'),
-    (INT, 'Integer'),
-    (BIG_INT, 'Big Integer'),
-    (FLOAT, 'Floating Point Number'),
-    (DECIMAL, 'Decimal'),
-    (DATE, 'Date'),
-    (TIME, 'Time'),
-    (DATETIME, 'Date/Time'),
-    (FILE, 'File'),
-    (IMAGE, 'Image'),
-    (USER, 'User')
-)
-
-FIELD_MAP = {
-    CHAR: 'charfield',
-    TEXT: 'textfield',
-    SLUG: 'slugfield',
-    EMAIL: 'emailfield',
-    URL: 'urlfield',
-    BOOLEAN: 'booleanfield',
-    INT: 'integerfield',
-    BIG_INT: 'bigintegerfield',
-    FLOAT: 'floatfield',
-    DECIMAL: 'decimalfield',
-    DATE: 'datefield',
-    TIME: 'timefield',
-    DATETIME: 'datetimefield',
-    FILEPATH: 'filepathfield',
-    FILE: 'filefield',
-    IMAGE: 'imagefield',
-    USER: 'userfield',
-    IP_ADDR: 'ipaddress',
-    FOREIGN_KEY: 'foreignkey'
+# reverse lookup django field type -> built-in type constant for data wrappers to create virtual fields
+REVERSE_FIELD_MAP = {
+    db.CharField: CHAR,
+    db.TextField: TEXT,
+    db.SlugField: SLUG,
+    db.EmailField: EMAIL,
+    db.URLField: URL,
+    db.BooleanField: BOOLEAN,
+    db.IntegerField: INT,
+    db.FloatField: FLOAT,
+    db.BigIntegerField: BIG_INT,
+    db.DecimalField: DECIMAL,
+    db.DateField: DATE,
+    db.TimeField: TIME,
+    db.DateTimeField: DATETIME,
+    db.FileField: FILE,
+    db.ImageField: IMAGE
 }
+
+# forward lookup to associate relation constant to django field type
+RELATED_FIELD_MAP = {
+    FOREIGN_KEY: db.ForeignKey,
+    MANY_TO_MANY: db.ManyToManyField,
+    ONE_TO_ONE: db.OneToOneField
+}
+
+# reverse lookup django relation type -> built-in relation constant for data wrappers to create virtual fields
+REVERSE_RELATION_MAP = dict(zip(RELATED_FIELD_MAP.values(), RELATED_FIELD_MAP.keys()))
 
 
 class FieldRegistryData(db.Model):
     '''
-        Create unique ids for fields so that we always get the same field for a given id
+        Data store to save ids for custom fields so that they always get the same id
     '''
     name = db.CharField(max_length=64)
 
 
 class FieldRegistry(object):
-
-    _registry = {}
+    '''
+        Registry for dynamic field types.  Generates choices fields for field types and generates mappings between
+        django fields and dynamic fields.
+    '''
 
     def __init__(self):
         super(FieldRegistry, self).__init__()
-        self._field_map = {}
-        self._field_choices = []
-        self._db_field_map = {}
+        self.field_map = {}
+        self.field_choices = []
+        self.db_field_map = {}
 
     def __iter__(self):
         return iter(self.field_choices)
 
-    @property
-    def field_choices(self):
-        if not self._field_choices:
-            self._generate_field_choices()
-        return self._field_choices
+    def register(self, name, extended_opts, override_id=None):
+        if not override_id:
+            created, data_obj = FieldRegistryData.objects.get_or_create(name=name)
+            FieldRegistry._registry[name] = (extended_opts, data_obj.id)
+            id = data_obj.id
+        else:
+            id = override_id
 
-    def _generate_field_choices(self):
-        self._field_choices = []
-        for field_name, (extended_opts, id) in FieldRegistry._registry.iteritems():
-            self._field_choices.append((id, field_name))
+        # this is for choosing the correct extended opts class from the Field
+        field = extended_opts._meta.get_field_by_name('field')[0]
+        related_name = field.rel.related_name
+        self.field_map[id] = related_name
 
-    @property
-    def db_field_map(self):
-        if not self._db_field_map:
-            self._generate_db_field_map()
-        return self._db_field_map
+        # this is for adding field types to choices fields in admin
+        self.field_choices.append((id, name))
 
-    def _generate_db_field_map(self):
-        self._db_field_map = {}
+        # this is for accessing the correct extended opts from other classes
+        self.db_field_map[id] = extended_opts
 
 
-    @property
-    def field_map(self):
-        if not self._field_map:
-            self._generate_field_map()
-        return self._field_map
-
-    def _generate_field_map(self):
-        self._field_map = {}
-        for field_name, (extended_opts, id) in FieldRegistry._registry.iteritems():
-            field = extended_opts._meta.get_field_by_name('field')
-            related_name = field.rel.related_name
-            self._field_map[id] = related_name
-
-    def register(self, name, extended_opts):
-        data_obj = FieldRegistryData.objects.get_or_create(name=name)
-        FieldRegistry._registry[name] = (extended_opts, data_obj.id)
-
-        self._generate_field_map()
-        self._generate_field_choices()
-
+registry = FieldRegistry()
 
 
 class UploadLocation(db.Model):
@@ -202,7 +173,7 @@ class Field(BaseField):
         #unique_together = ['model', 'name']
 
 
-    type = db.IntegerField(choices=FIELD_CHOICES)
+    type = db.IntegerField(choices=registry)                                                                                               ############ changed here - type = db.IntegerField(choices=FIELD_CHOICES)
     primary_key = db.BooleanField(default=False, verbose_name='PK')
     index = db.BooleanField(default=False)
 
@@ -232,7 +203,7 @@ class Field(BaseField):
                     existing.specific.delete()
 
                     # create subfield data settings
-                    field_type = DB_FIELD_MAP[self.type]
+                    field_type = registry.db_field_map[self.type]
                     field = field_type(field=self)
                     field.save()
 
@@ -249,7 +220,7 @@ class Field(BaseField):
             super(Field, self).save(force_insert, force_update, using, update_fields)
 
             # create subfield data settings
-            field_type = DB_FIELD_MAP[self.type]
+            field_type = registry.db_field_map[self.type]
             field = field_type(field=self)
             field.save()
 
@@ -265,7 +236,7 @@ class Field(BaseField):
         '''
         self.model.remove_field(self)
 
-        field_attr = FIELD_MAP[self.type]
+        field_attr = registry.field_map[self.type]
         specific = getattr(self, field_attr, None)
         specific.delete()
 
@@ -276,7 +247,7 @@ class Field(BaseField):
         '''
             Return the subfield for this field
         '''
-        field_attr = FIELD_MAP[self.type]
+        field_attr = registry.field_map[self.type]
         return getattr(self, field_attr, None)
 
     def _db_field(self):
@@ -731,48 +702,3 @@ class ImageField(ExtendedFieldOption):
         })
         return db.ImageField(**attrs)
 
-
-DB_FIELD_MAP = {
-    CHAR: CharField,
-    TEXT: TextField,
-    SLUG: SlugField,
-    EMAIL: EmailField,
-    URL: UrlField,
-    BOOLEAN: BooleanField,
-    INT: IntegerField,
-    BIG_INT: BigIntegerField,
-    FLOAT: FloatField,
-    DECIMAL: DecimalField,
-    DATE: DateField,
-    TIME: TimeField,
-    DATETIME: DateTimeField,
-    FILE: FileField,
-    IMAGE: ImageField,
-}
-
-REVERSE_FIELD_MAP = {
-    db.CharField: CHAR,
-    db.TextField: TEXT,
-    db.SlugField: SLUG,
-    db.EmailField: EMAIL,
-    db.URLField: URL,
-    db.BooleanField: BOOLEAN,
-    db.IntegerField: INT,
-    db.FloatField: FLOAT,
-    db.BigIntegerField: BIG_INT,
-    db.DecimalField: DECIMAL,
-    db.DateField: DATE,
-    db.TimeField: TIME,
-    db.DateTimeField: DATETIME,
-    db.FileField: FILE,
-    db.ImageField: IMAGE
-}
-
-RELATED_FIELD_MAP = {
-    FOREIGN_KEY: db.ForeignKey,
-    MANY_TO_MANY: db.ManyToManyField,
-    ONE_TO_ONE: db.OneToOneField
-}
-
-
-REVERSE_RELATION_MAP = dict(zip(RELATED_FIELD_MAP.values(), RELATED_FIELD_MAP.keys()))
