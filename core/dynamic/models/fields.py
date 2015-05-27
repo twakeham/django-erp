@@ -72,6 +72,69 @@ FIELD_MAP = {
 }
 
 
+class FieldRegistryData(db.Model):
+    '''
+        Create unique ids for fields so that we always get the same field for a given id
+    '''
+    name = db.CharField(max_length=64)
+
+
+class FieldRegistry(object):
+
+    _registry = {}
+
+    def __init__(self):
+        super(FieldRegistry, self).__init__()
+        self._field_map = {}
+        self._field_choices = []
+        self._db_field_map = {}
+
+    def __iter__(self):
+        return iter(self.field_choices)
+
+    @property
+    def field_choices(self):
+        if not self._field_choices:
+            self._generate_field_choices()
+        return self._field_choices
+
+    def _generate_field_choices(self):
+        self._field_choices = []
+        for field_name, (extended_opts, id) in FieldRegistry._registry.iteritems():
+            self._field_choices.append((id, field_name))
+
+    @property
+    def db_field_map(self):
+        if not self._db_field_map:
+            self._generate_db_field_map()
+        return self._db_field_map
+
+    def _generate_db_field_map(self):
+        self._db_field_map = {}
+
+
+    @property
+    def field_map(self):
+        if not self._field_map:
+            self._generate_field_map()
+        return self._field_map
+
+    def _generate_field_map(self):
+        self._field_map = {}
+        for field_name, (extended_opts, id) in FieldRegistry._registry.iteritems():
+            field = extended_opts._meta.get_field_by_name('field')
+            related_name = field.rel.related_name
+            self._field_map[id] = related_name
+
+    def register(self, name, extended_opts):
+        data_obj = FieldRegistryData.objects.get_or_create(name=name)
+        FieldRegistry._registry[name] = (extended_opts, data_obj.id)
+
+        self._generate_field_map()
+        self._generate_field_choices()
+
+
+
 class UploadLocation(db.Model):
     """
         Database model to represent locations that file and image fields can upload to
