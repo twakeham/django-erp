@@ -25,10 +25,6 @@ class DynamicFieldInline(admin.TabularInline):
         if not inst.pk:
             return None
 
-        print inst, inst.type, inst.specific.pk
-        print '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(registry.field_map[inst.type]), args=(inst.specific.pk, )))
-
-
         return '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(registry.field_map[inst.type]), args=(inst.specific.pk, )))
 
     edit_link.verbose_name = 'Advanced settings'
