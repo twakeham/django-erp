@@ -103,7 +103,7 @@ class FieldRegistry(object):
         self.db_field_map[id] = extended_opts
 
 
-registry = FieldRegistry()
+field_registry = FieldRegistry()
 
 
 class UploadLocation(db.Model):
@@ -173,7 +173,7 @@ class Field(BaseField):
         #unique_together = ['model', 'name']
 
 
-    type = db.IntegerField(choices=registry)                                                                                               ############ changed here - type = db.IntegerField(choices=FIELD_CHOICES)
+    type = db.IntegerField(choices=field_registry)
     primary_key = db.BooleanField(default=False, verbose_name='PK')
     index = db.BooleanField(default=False)
 
@@ -203,7 +203,7 @@ class Field(BaseField):
                     existing.specific.delete()
 
                     # create subfield data settings
-                    field_type = registry.db_field_map[self.type]
+                    field_type = field_registry.db_field_map[self.type]
                     field = field_type(field=self)
                     field.save()
 
@@ -220,7 +220,7 @@ class Field(BaseField):
             super(Field, self).save(force_insert, force_update, using, update_fields)
 
             # create subfield data settings
-            field_type = registry.db_field_map[self.type]
+            field_type = field_registry.db_field_map[self.type]
             field = field_type(field=self)
             field.save()
 
@@ -236,7 +236,7 @@ class Field(BaseField):
         '''
         self.model.remove_field(self)
 
-        field_attr = registry.field_map[self.type]
+        field_attr = field_registry.field_map[self.type]
         specific = getattr(self, field_attr, None)
         specific.delete()
 
@@ -247,7 +247,7 @@ class Field(BaseField):
         '''
             Return the subfield for this field
         '''
-        field_attr = registry.field_map[self.type]
+        field_attr = field_registry.field_map[self.type]
         return getattr(self, field_attr, None)
 
     def _db_field(self):

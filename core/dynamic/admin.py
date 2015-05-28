@@ -3,8 +3,8 @@ from django.core import urlresolvers
 
 # This probably shouldn't be here, but it needs to occur before the user gets to do any interaction
 # with the database but after model creation, so this is where it landed.  We don't use the import for anything
-# it is merely here to ensure the code in registry.py gets run.  Needs to happen before import of models.fields
-# or it overrides the registry attribute
+# it is merely here to ensure the code in field_registry.py gets run.  Needs to happen before import of models.fields
+# or it overrides the field_registry attribute
 import registry
 
 from core.dynamic.models import *
@@ -25,7 +25,7 @@ class DynamicFieldInline(admin.TabularInline):
         if not inst.pk:
             return None
 
-        return '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(registry.field_map[inst.type]), args=(inst.specific.pk, )))
+        return '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(field_registry.field_map[inst.type]), args=(inst.specific.pk, )))
 
     edit_link.verbose_name = 'Advanced settings'
     edit_link.allow_tags = True

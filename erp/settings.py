@@ -41,7 +41,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'core.dynamic',
-    'core.form'
+    'core.form',
+
+    'apps.user'
 
 )
 
