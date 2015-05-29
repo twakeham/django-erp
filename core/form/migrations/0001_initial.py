@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                 ('caption', models.CharField(help_text=b'Leave blank for ungrouped fields', max_length=64, blank=True)),
                 ('description', models.TextField(blank=True)),
                 ('sort_order', models.PositiveIntegerField(default=0)),
-                ('form', models.ForeignKey(to='form.ModelForm')),
+                ('form', models.ForeignKey(related_name='groups', to='form.ModelForm')),
             ],
             options={
                 'verbose_name': 'Form field group',
@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='modelformfield',
             name='group',
-            field=models.ForeignKey(to='form.ModelFormFieldGroup'),
+            field=models.ForeignKey(related_name='fields', to='form.ModelFormFieldGroup'),
             preserve_default=True,
         ),
     ]

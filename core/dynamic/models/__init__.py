@@ -59,12 +59,16 @@ class Model(db.Model):
             verbose_name_plural = self.verbose_name_plural or None
             db_table = self.db_table
 
+        def __unicode__(inst):
+            return self.display_format.format(**model_to_dict(inst))
+
+
         fields = Field.objects.filter(basefield_ptr__model=self)
 
         attrs = {field.name: field._db_field() for field in fields}
 
         attrs['Meta'] = Meta
-        attrs['__unicode__'] = lambda record: record.display_format.format(model_to_dict(record))
+        attrs['__unicode__'] = __unicode__
         attrs['__module__'] = 'udt'
         attrs['deferred'] = True
 

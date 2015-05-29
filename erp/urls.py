@@ -3,6 +3,11 @@ from django.contrib import admin
 
 from core.dynamic.admin import fieldadmin
 
+
+
+from core.form.views import show
+
+
 urlpatterns = patterns('',
     # Examples:
     # url(r'^$', 'erp.views.home', name='home'),
@@ -11,4 +16,5 @@ urlpatterns = patterns('',
     url(r'^grappelli/', include('grappelli.urls')), # grappelli URLS
     url(r'^admin/', include(admin.site.urls)),
     url(r'^fields/', include(fieldadmin.urls)),
+    url(r'^$', show)
 )

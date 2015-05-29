@@ -1,4 +1,5 @@
 from django.db import models as db
+from django.utils.importlib import import_module
 
 # built-in field type constants
 BIG_INT = 2
@@ -66,6 +67,9 @@ class FieldRegistryData(db.Model):
         Data store to save ids for custom fields so that they always get the same id
     '''
     name = db.CharField(max_length=64)
+    module = db.CharField(max_length=128)
+    classname = db.CharField(max_length=64)
+    accessor = db.CharField(max_length=32)
 
 
 class FieldRegistry(object):
@@ -76,31 +80,52 @@ class FieldRegistry(object):
 
     def __init__(self):
         super(FieldRegistry, self).__init__()
-        self.field_map = {}
-        self.field_choices = []
-        self.db_field_map = {}
+        self._db_field_map = {}
 
     def __iter__(self):
         return iter(self.field_choices)
 
-    def register(self, name, extended_opts, override_id=None):
-        if not override_id:
-            created, data_obj = FieldRegistryData.objects.get_or_create(name=name)
-            FieldRegistry._registry[name] = (extended_opts, data_obj.id)
-            id = data_obj.id
-        else:
-            id = override_id
+    @property
+    def field_map(self):
+        return {field.id: field.accessor for field in FieldRegistryData.objects.all()}
 
-        # this is for choosing the correct extended opts class from the Field
-        field = extended_opts._meta.get_field_by_name('field')[0]
-        related_name = field.rel.related_name
-        self.field_map[id] = related_name
+    @property
+    def field_choices(self):
+        try:
+            return [(field.id, field.name) for field in FieldRegistryData.objects.all()]
+        except:
+            return []
 
-        # this is for adding field types to choices fields in admin
-        self.field_choices.append((id, name))
+    def field_type(self, type):
+        if type not in self._db_field_map:
+            field_data = FieldRegistryData.objects.get(id=type)
+            try:
+                module = import_module(field_data.module)
+            except ImportError:
+                module = import_module('apps.{0}'.format(field_data.module))
+            field_type = getattr(module, field_data.classname)
+            #cache field types since it's an expensive op
+            self._db_field_map[type] = field_type
 
-        # this is for accessing the correct extended opts from other classes
-        self.db_field_map[id] = extended_opts
+        return self._db_field_map[type]
+
+    def register(self, name, path):
+        parts = path.split('.')
+        module_path = '.'.join(parts[:-1])
+        classname = parts[-1]
+
+        try:
+            module = import_module(module_path)
+        except ImportError:
+            module = import_module('apps.{0}'.format(module_path))
+        field_type = getattr(module, classname)
+
+        field = field_type._meta.get_field_by_name('field')[0]
+        accessor = field.rel.related_name
+
+        field_data, created = FieldRegistryData.objects.get_or_create(name=name, accessor=accessor, module=module_path, classname=classname)
+        self._db_field_map[field_data.id] = field_type
+
 
 
 field_registry = FieldRegistry()
@@ -203,7 +228,7 @@ class Field(BaseField):
                     existing.specific.delete()
 
                     # create subfield data settings
-                    field_type = field_registry.db_field_map[self.type]
+                    field_type = field_registry.field_type(self.type)
                     field = field_type(field=self)
                     field.save()
 
@@ -220,7 +245,7 @@ class Field(BaseField):
             super(Field, self).save(force_insert, force_update, using, update_fields)
 
             # create subfield data settings
-            field_type = field_registry.db_field_map[self.type]
+            field_type = field_registry.field_type(self.type)
             field = field_type(field=self)
             field.save()
 

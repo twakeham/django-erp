@@ -1,12 +1,6 @@
 from django.contrib import admin
 from django.core import urlresolvers
 
-# This probably shouldn't be here, but it needs to occur before the user gets to do any interaction
-# with the database but after model creation, so this is where it landed.  We don't use the import for anything
-# it is merely here to ensure the code in field_registry.py gets run.  Needs to happen before import of models.fields
-# or it overrides the field_registry attribute
-import registry
-
 from core.dynamic.models import *
 from core.dynamic.models.fields import *
 
@@ -25,7 +19,10 @@ class DynamicFieldInline(admin.TabularInline):
         if not inst.pk:
             return None
 
-        return '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(field_registry.field_map[inst.type]), args=(inst.specific.pk, )))
+        try:
+            return '<a href="{0}?_popup=1" onclick="return showAddAnotherPopup(this);">Advanced settings</a>'.format(urlresolvers.reverse('fieldadmin:dynamic_{0}_change'.format(field_registry.field_map[inst.type]), args=(inst.specific.pk, )))
+        except urlresolvers.NoReverseMatch:
+            return None
 
     edit_link.verbose_name = 'Advanced settings'
     edit_link.allow_tags = True
@@ -93,9 +90,13 @@ class DynamicModelAdmin(admin.ModelAdmin):
             return []
         return ('inherits', 'db_table')
 
-    def get_queryset(self, request):
-        qs = super(DynamicModelAdmin, self).get_queryset(request)
-        return qs.filter(modelwrapper__isnull=True)
+    def save_model(self, request, obj, form, change):
+        super(DynamicModelAdmin, self).save_model(request, obj, form, change)
+        print
+
+    #def get_queryset(self, request):
+    #    qs = super(DynamicModelAdmin, self).get_queryset(request)
+    #    return qs.filter(modelwrapper__isnull=True)
 
 admin.site.register(Model, DynamicModelAdmin)
 

@@ -116,7 +116,7 @@ class Migration(migrations.Migration):
             name='Field',
             fields=[
                 ('basefield_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='dynamic.BaseField')),
-                ('type', models.IntegerField(choices=[(5, b'Short Text'), (18, b'Text'), (16, b'Slug'), (9, b'Email'), (20, b'URL'), (4, b'Boolean'), (14, b'Integer'), (2, b'Big Integer'), (12, b'Floating Point Number'), (8, b'Decimal'), (6, b'Date'), (19, b'Time'), (7, b'Date/Time'), (10, b'File'), (13, b'Image'), (21, b'User')])),
+                ('type', models.IntegerField()),
                 ('primary_key', models.BooleanField(default=False, verbose_name=b'PK')),
                 ('index', models.BooleanField(default=False)),
                 ('virtual', models.BooleanField(default=False)),
@@ -125,6 +125,19 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Field',
             },
             bases=('dynamic.basefield',),
+        ),
+        migrations.CreateModel(
+            name='FieldRegistryData',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=64)),
+                ('module', models.CharField(max_length=128)),
+                ('classname', models.CharField(max_length=64)),
+                ('accessor', models.CharField(max_length=32)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='FileField',
