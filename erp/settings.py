@@ -41,9 +41,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'core.dynamic',
+    'core.dynamic.udt',
     'core.form',
-
-    'apps.user'
+    'core.user'
 
 )
 
@@ -55,7 +55,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'apps.user.middleware.UserLoggingMiddleware',
+    'core.user.middleware.UserLoggingMiddleware',
 )
 
 ROOT_URLCONF = 'erp.urls'

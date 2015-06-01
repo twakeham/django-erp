@@ -1,11 +1,8 @@
 from django.db import models as db
-from django.db.models.signals import pre_save
-
 from django.contrib.auth.models import User
 
 from core.dynamic.models.fields import ExtendedFieldOption, Field
-
-from fields import UserField
+from core.user.fields import UserField
 
 
 class AutoUserField(ExtendedFieldOption):

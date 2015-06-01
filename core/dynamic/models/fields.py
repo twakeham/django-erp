@@ -159,7 +159,7 @@ class BaseField(db.Model):
     model = db.ForeignKey('Model')
 
     name = db.CharField(max_length=64)
-    verbose_name = db.CharField(max_length=64, blank=True)
+    verbose_name = db.CharField(max_length=64, blank=True, verbose_name='Caption')
     help_text = db.CharField(max_length=255, blank=True, null=True)
     required = db.BooleanField(default=False)
     unique = db.BooleanField(default=False)
@@ -365,7 +365,7 @@ class Relation(BaseField):
         else:
             try:
                 # try to create relation field
-                return type(self.related_model.name, **attrs)
+                return type(self.related_model.model, **attrs)
             except ValueError:
                 # if related model has not been evaluated by django yet, we need to expose it, but need to be careful
                 # of mutually recursive relationships between models creating runtime exceptions, so create a model
@@ -374,10 +374,6 @@ class Relation(BaseField):
                 relation_field = type(self.related_model.name, **attrs)
                 self.related_model._contribute_relations(model)
                 return relation_field
-
-
-#class RelationWrapper(Relation):
-
 
 
 class ExtendedFieldOption(db.Model):

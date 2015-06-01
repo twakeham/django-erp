@@ -1,7 +1,7 @@
 from django.db.models import signals
 from django.utils.functional import curry
 
-from fields import UserField
+from core.user.fields import UserField
 
 
 class UserLoggingMiddleware(object):
