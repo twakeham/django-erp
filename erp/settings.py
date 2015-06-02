@@ -40,10 +40,15 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'core',
     'core.dynamic',
     'core.dynamic.udt',
     'core.form',
-    'core.user'
+    'core.user',
+
+    'apps',
+    'apps.userprofile',
+    'apps.checklist',
 
 )
 

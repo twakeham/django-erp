@@ -1,61 +1,27 @@
 from django.db import models as db
 from django.utils.importlib import import_module
-
-# built-in field type constants
-BIG_INT = 2
-BOOLEAN = 4
-CHAR = 5
-DATE = 6
-DATETIME = 7
-DECIMAL = 8
-EMAIL = 9
-FILE = 10
-FILEPATH = 11
-FLOAT = 12
-IMAGE = 13
-INT = 14
-IP_ADDR = 15
-SLUG = 16
-TEXT = 18
-TIME = 19
-URL = 20
+from django.contrib.contenttypes.fields import GenericRelation
 
 # relation constants
 FOREIGN_KEY = 30
 MANY_TO_MANY = 31
 ONE_TO_ONE = 32
+GENERIC = 33
 
 # relations choices for type select box
 RELATION_CHOICES = (
     (FOREIGN_KEY, 'Foreign Key'),
     (MANY_TO_MANY, 'Many to Many'),
-    (ONE_TO_ONE, 'One to One')
+    (ONE_TO_ONE, 'One to One'),
+    (GENERIC, 'Generic Relation')
 )
-
-# reverse lookup django field type -> built-in type constant for data wrappers to create virtual fields
-REVERSE_FIELD_MAP = {
-    db.CharField: CHAR,
-    db.TextField: TEXT,
-    db.SlugField: SLUG,
-    db.EmailField: EMAIL,
-    db.URLField: URL,
-    db.BooleanField: BOOLEAN,
-    db.IntegerField: INT,
-    db.FloatField: FLOAT,
-    db.BigIntegerField: BIG_INT,
-    db.DecimalField: DECIMAL,
-    db.DateField: DATE,
-    db.TimeField: TIME,
-    db.DateTimeField: DATETIME,
-    db.FileField: FILE,
-    db.ImageField: IMAGE
-}
 
 # forward lookup to associate relation constant to django field type
 RELATED_FIELD_MAP = {
     FOREIGN_KEY: db.ForeignKey,
     MANY_TO_MANY: db.ManyToManyField,
-    ONE_TO_ONE: db.OneToOneField
+    ONE_TO_ONE: db.OneToOneField,
+    GENERIC: GenericRelation
 }
 
 # reverse lookup django relation type -> built-in relation constant for data wrappers to create virtual fields
@@ -96,6 +62,9 @@ class FieldRegistry(object):
         except:
             return []
 
+    def get_type(self, type):
+        return FieldRegistryData.objects.get(name=type)
+
     def field_type(self, type):
         if type not in self._db_field_map:
             field_data = FieldRegistryData.objects.get(id=type)
@@ -129,6 +98,42 @@ class FieldRegistry(object):
 
 
 field_registry = FieldRegistry()
+
+BIG_INT = 8
+BOOLEAN = 6
+CHAR = 1
+DATE = 11
+DATETIME = 13
+DECIMAL = 10
+EMAIL = 4
+FILE = 14
+FLOAT = 9
+IMAGE = 15
+INT = 7
+SLUG = 3
+TEXT = 2
+TIME = 12
+URL = 5
+
+
+# reverse lookup django field type -> built-in type constant for data wrappers to create virtual fields
+REVERSE_FIELD_MAP = {
+    db.CharField: CHAR,
+    db.TextField: TEXT,
+    db.SlugField: SLUG,
+    db.EmailField: EMAIL,
+    db.URLField: URL,
+    db.BooleanField: BOOLEAN,
+    db.IntegerField: INT,
+    db.FloatField: FLOAT,
+    db.BigIntegerField: BIG_INT,
+    db.DecimalField: DECIMAL,
+    db.DateField: DATE,
+    db.TimeField: TIME,
+    db.DateTimeField: DATETIME,
+    db.FileField: FILE,
+    db.ImageField: IMAGE
+}
 
 
 class UploadLocation(db.Model):
@@ -336,8 +341,10 @@ class Relation(BaseField):
 
         else:
             super(Relation, self).save(force_insert, force_update, using, update_fields)
-
-            self.model.add_field(self)
+            if self.type != GENERIC:
+                self.model.add_field(self)
+            else:
+                self.model._model_add_field(self)
 
     def delete(self, using=None):
         '''
@@ -364,14 +371,13 @@ class Relation(BaseField):
             return type('self', **attrs)
         else:
             try:
-                # try to create relation field
-                return type(self.related_model.model, **attrs)
+                return type(self.related_model.model, **attrs if self.type != GENERIC else {})
             except ValueError:
                 # if related model has not been evaluated by django yet, we need to expose it, but need to be careful
                 # of mutually recursive relationships between models creating runtime exceptions, so create a model
                 # sans relations, create the relationship then contribute the other models relations
                 model = self.related_model._create_deferred_relation_model()
-                relation_field = type(self.related_model.name, **attrs)
+                relation_field = type(self.related_model.name, **attrs if self.type != GENERIC else {})
                 self.related_model._contribute_relations(model)
                 return relation_field
 

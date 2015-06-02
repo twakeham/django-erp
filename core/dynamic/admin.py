@@ -76,6 +76,7 @@ fieldadmin.register(ImageField, FieldAdmin)
 
 class DynamicModelAdmin(admin.ModelAdmin):
 
+    save_as = True
     inlines = (DynamicFieldInline, DynamicRelationInline)
     fieldsets = [
         (None, {'fields': ['name', 'inherits']}),

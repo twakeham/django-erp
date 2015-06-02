@@ -8,6 +8,7 @@ from core.dynamic.models.fields import *
 
 from fields import REVERSE_FIELD_MAP, REVERSE_RELATION_MAP, MANY_TO_MANY, Field, Relation
 
+
 class Model(db.Model):
     '''
         Dynamodel database representation
@@ -121,6 +122,7 @@ class Model(db.Model):
         if not self.id:
             # if the model hasn't got an id it's new and needs to have its database model created
             self._db_create_model()
+            ContentType.objects.get_or_create(app_label='udt', model=self.name.lower(), name=self.verbose_name)
 
         if not self.db_table:
             # auto populate table name if it isn't supplied
