@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'core',
+    'core.template',
     'core.dynamic',
     'core.dynamic.udt',
     'core.form',
@@ -103,3 +104,14 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 GRAPPELLI_ADMIN_TITLE = 'Launchpad ERP'
+
+TEMPLATE_LOADERS = (
+    'django.template.loaders.filesystem.Loader',
+    'django.template.loaders.app_directories.Loader',
+    'core.template.templateloader.DatabaseTemplateLoader'
+
+)
+
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+STATIC_URL = '/static/'

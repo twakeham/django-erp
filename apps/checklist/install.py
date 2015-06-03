@@ -9,6 +9,9 @@ from models import *
 if 'core.user' not in settings.INSTALLED_APPS:
     raise ImproperlyConfigured('core.users must be installed to use checklist app')
 
+if 'core.template' not in settings.INSTALLED_APPS:
+    raise ImproperlyConfigured('core.template must be installed to use checklist app')
+
 
 ModelWrapper.objects.get_or_create(content_type=ContentType.objects.get_for_model(ChecklistFollowup))
 

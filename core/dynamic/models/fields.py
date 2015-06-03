@@ -147,7 +147,7 @@ class UploadLocation(db.Model):
     def __unicode__(self):
         return self.path
 
-    path = db.CharField(max_length=255)
+    path = db.CharField(max_length=255, default='files/')
 
 
 class BaseField(db.Model):
@@ -697,7 +697,7 @@ class FileField(ExtendedFieldOption):
 
     field = db.OneToOneField('Field', related_name='filefield')
 
-    upload_to = db.ForeignKey('UploadLocation', related_name='files')
+    upload_to = db.ForeignKey('UploadLocation', related_name='files', default=1)
     max_length = db.IntegerField(default=100)
 
     def _db_field(self, attrs):
@@ -719,7 +719,7 @@ class ImageField(ExtendedFieldOption):
     field = db.OneToOneField('Field', related_name='imagefield')
 
 
-    upload_to = db.ForeignKey('UploadLocation', related_name='images')
+    upload_to = db.ForeignKey('UploadLocation', related_name='images', default=1)
     max_length = db.IntegerField(default=100)
 
     def _db_field(self, attrs):

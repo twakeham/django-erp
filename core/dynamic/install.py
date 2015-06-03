@@ -3,13 +3,15 @@ from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
 
 from core.dynamic.models import ModelWrapper
-from core.dynamic.models.fields import field_registry
+from core.dynamic.models.fields import field_registry, UploadLocation
 
 
 if 'django.contrib.contenttypes' not in settings.INSTALLED_APPS:
     raise ImproperlyConfigured('Content Types must be installed for LaunchPad ERP')
 
 ModelWrapper.objects.get_or_create(content_type=ContentType.objects.get_for_model(ContentType))
+
+UploadLocation.objects.get_or_create(id=1, path='files/')
 
 # register standard data types
 field_registry.register('Short Text', 'core.dynamic.models.fields.CharField')

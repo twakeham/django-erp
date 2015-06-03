@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Checklist{% endblock %}
+
+{% block extra_head %}
+    <script src="static/js/signature_pad.js"></script>
+    <style>
+
+            .check-text {
+                display: block;
+                position: relative;
+                overflow: visible;
+                clear: both;
+                padding: .8em;
+            }
+
+            .check-text > label {
+                width: 80%;
+                padding-right: 5%;
+                float: left;
+            }
+
+            .check-text > label h4 {
+                margin: 4px 0 8px 0;
+            }
+
+            .check-text > input {
+                width: 15%;
+                float: right;
+            }
+
+            .ui-footer {
+                padding: 0px 8px;
+            }
+
+            .ui-body {
+                margin-bottom: 8px;
+            }
+
+            .ui-field-contain > label {
+                font-weight: bold;
+            }
+
+            textarea {
+                min-height: 75px;
+                margin-bottom: 0px !important;
+            }
+
+            #imageupload {
+                display: none;
+            }
+
+            #photos {
+                display: none;
+            }
+
+            .photo-img {
+                width: 30%;
+                margin: 2%;
+            }
+
+            .thumbnail {
+              position: relative;
+              width: 150px;
+              height: 150px;
+              overflow: hidden;
+              float: left;
+               margin-right: 10px;
+                border: 1px solid #ccc;
+            }
+            .thumbnail img {
+              position: absolute;
+              left: 50%;
+              top: 50%;
+              height: 100%;
+              width: auto;
+              -webkit-transform: translate(-50%,-50%);
+                  -ms-transform: translate(-50%,-50%);
+                      transform: translate(-50%,-50%);
+            }
+            .thumbnail img.portrait {
+              width: 100%;
+              height: auto;
+            }
+
+        </style>
+{% endblock %}
+
+{% block content %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for fieldset in form %}
+            <div data-role="page" id="page-{{ fieldset.counter }}">
+                <div data-role="header" class="ui-header" data-position="fixed">
+                    <h4 class="ui-heading">{{ form.name }}</h4>
+                </div>
+                <div role="main" class="ui-content">
+                    {% for field in fieldset %}
+                        <div class="ui-field-contain">
+                            {{ field.label_tag }}
+                            {{ field }}
+                        </div>
+                    {% endfor %}
+                </div>
+            <div data-role="footer" class="ui-footer" data-position="fixed">
+                <h4 class="ui-heading">Page {{ fieldset.counter }} of {{ form.fieldset|length }}</h4>
+            </div>
+        {% endfor %}
+    </form>
+{% endblock %}
